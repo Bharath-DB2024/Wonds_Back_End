@@ -374,6 +374,53 @@ router.post('/pending-settlements', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-// Your existing /settlement POST route
+// Your existing /settlement POST route /// get a data  from subcription data  on settlement page
+router.post('/histroyset', async (req, res) => {
+  try {
+    const { uniqueId } = req.body; // Expecting uniqueId in the request body
+ console.log(uniqueId);
+    // Validate input
+    if (!uniqueId) {
+      return res.status(400).json({ error: 'uniqueId is required' });
+    }
 
+    // Find the settlement record by uniqueId and corresponding _id
+    const settlement = await Settlement.findOne({_id: uniqueId });
+
+    if (!settlement) {
+      return res.status(404).json({ error: 'Settlement not found' });
+    }
+
+    // Extract secondaryIdCounts from the settlement
+    const secondaryIds = settlement.secondaryIdCounts;
+
+    // Find all subscriptions where secondaryUniqueId matches any of the secondaryIds, excluding documents
+    const subscriptions = await Subscription.find({
+      secondaryUniqueId: { $in: secondaryIds }
+    }).select('mobile name plan category uniqueId settlement createdAt secondaryUniqueId'); // Exclude documents field
+
+    // Prepare the response
+    const response = {
+      settlement: {
+        _id: settlement._id,
+        mobile: settlement.mobile,
+        amount: settlement.amount,
+        secondaryIdCounts: settlement.secondaryIdCounts,
+        uniqueId: settlement.uniqueId,
+        name: settlement.name,
+        status: settlement.status,
+        createdAt: settlement.createdAt,
+        count: settlement.count
+      },
+      subscriptions: subscriptions, // Matching subscription records
+      totalSubscriptions: subscriptions.length // Number of matching subscriptions
+    };
+
+    // Send the response
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error fetching settlement or subscription data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 module.exports = router;
