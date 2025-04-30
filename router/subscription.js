@@ -101,7 +101,7 @@ router.post('/subscribe', upload.fields([
     const message=`Thank you for subscribing to Wonds by Cyboglabs, ${name1}! No more worrying about lost bills, missed dates, or service centre runs. We handle it all. Know more: wonds.in | 1800 410 1155.&fl=0&dc=0&gwid=2`
     
     
-      sendOtp(mobile,message );
+      // sendOtp(mobile,message );
     res.status(200).json({
       message: 'Subscription created successfully',
       subscriptionId: subscription._id,

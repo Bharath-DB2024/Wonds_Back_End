@@ -11,7 +11,11 @@ const SettlemetSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-
+  secondaryIdCounts: {
+    type: [String], // Array of unique secondaryId values
+    required: true,
+    default: [], // Ensure it’s never null
+  },
 
   uniqueId:{
     type: String,
