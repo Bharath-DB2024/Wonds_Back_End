@@ -107,9 +107,10 @@ const router = express.Router();
 
 router.post('/settlement', async (req, res) => {
   try {
-    const { uniqueId, date, phone, name, status } = req.body;
-    console.log(uniqueId, date, phone);
+    const { uniqueId, phone, name, status } = req.body;
 
+    const date = new Date(); // or use your preferred format
+    console.log(uniqueId, date, phone);
     // Validate required fields
     if (!uniqueId) {
       return res.status(400).json({ error: "Unique identifier is required" });
@@ -140,8 +141,10 @@ router.post('/settlement', async (req, res) => {
         $gte: startOfDay,
         $lte: endOfDay,
       },
+      
+settlement:null,
     });
-
+   
     // Update settlement to true for matching subscriptions
     if (todaySubscriptions.length > 0) {
       await Subscription.updateMany(
@@ -172,6 +175,7 @@ router.post('/settlement', async (req, res) => {
     const subscriptionLength = todaySubscriptions.length;
 
     // Create a single settlement record
+    if (subscriptionLength > 0) {
     const newSettlement = new Settlement({
       mobile: phone,
       amount: totalAmount, // Total amount for all subscriptions
@@ -186,7 +190,7 @@ router.post('/settlement', async (req, res) => {
     // Save the settlement record
     await newSettlement.save();
 
-    // Response with total amount, count, and secondaryId counts
+  }// Response with total amount, count, and secondaryId counts
     res.status(200).json({
       totalAmount,
       length: subscriptionLength,

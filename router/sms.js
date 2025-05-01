@@ -3,7 +3,8 @@ const express = require("express");
 const mongoose = require("mongoose");
 const twilio = require("twilio");
 const axios=require("axios");
-
+const Subscription = require('../models/subscription'); // Import Subscription schema
+const Settlement = require('../models/settlement'); // Import Settlement schema
 
 
 const router = express.Router();
@@ -59,12 +60,103 @@ router.post("/send-otp", async (req, res) => {
 
 // API to verify OTP
 router.post("/verify-otp", async (req, res) => {
-  const { phone, otp } = req.body;
+  const { phone, otp,uniqueId} = req.body;
 
+  console.log(req.body);
+  const date = new Date();
   const storedOtp = await OTP.findOne({ phone });
+ 
+
 
   if (storedOtp && storedOtp.otp === otp) {
+      const name = "Wonds by Cyboglabs"; // Set the name to Wonds by Cyboglabs
+      const status = "success"; // Set status to success if OTP is valid
     await OTP.deleteOne({ phone }); // Remove OTP after successful verification
+     if (!uniqueId) {
+          return res.status(400).json({ error: "Unique identifier is required" });
+        }
+        if (!date) {
+          return res.status(400).json({ error: "Date is required" });
+        }
+        if (!phone) {
+          return res.status(400).json({ error: "Phone number is required" });
+        }
+    
+        // Validate phone number format (10 digits)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!phoneRegex.test(phone)) {
+          return res.status(400).json({ error: "Phone number must be a 10-digit number" });
+        }
+    
+        // Parse the provided date
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+    
+        // Find subscriptions for the given date and uniqueId
+        const todaySubscriptions = await Subscription.find({
+          uniqueId: uniqueId,
+          createdAt: {
+            $gte: startOfDay,
+            $lte: endOfDay,
+            
+          },
+          settlement:null,
+        });
+    
+        // Update settlement to true for matching subscriptions
+        if (todaySubscriptions.length > 0) {
+          await Subscription.updateMany(
+            {
+              uniqueId: uniqueId,
+              createdAt: {
+                $gte: startOfDay,
+                $lte: endOfDay,
+              },
+            },
+            { $set: { settlement: true } }
+          );
+        }
+    
+        // Extract unique secondaryId values
+        const secondaryIdCounts = [...new Set(todaySubscriptions.map(sub => sub.secondaryUniqueId || 'unknown'))];
+    
+        // Calculate total amount
+        const calculateTotalAmount = (subscriptions) => {
+          return subscriptions.reduce((total, sub) => {
+            const planValue = parseFloat(sub.plan.match(/₹(\d+)/)?.[1] || 0);
+            return total + planValue;
+          }, 0);
+        };
+    
+        // Calculate total amount and count
+        const totalAmount = calculateTotalAmount(todaySubscriptions);
+        const subscriptionLength = todaySubscriptions.length;
+    
+        // Create a single settlement record
+        if (subscriptionLength > 0) {
+           const newSettlement = new Settlement({
+             mobile: phone,
+             amount: totalAmount, // Total amount for all subscriptions
+             uniqueId: uniqueId,
+             secondaryIdCounts: secondaryIdCounts.map(id => (id === 'unknown' ? null : id)), // Convert 'unknown' to null
+             createdAt: new Date(),
+             name: name,
+             status: status,
+             count: subscriptionLength, // Total count of subscriptions
+           });
+       
+           // Save the settlement record
+           await newSettlement.save();
+       
+         }// Response with total amount, coun
+        // Response with total amount, count, and secondaryId counts
+        // res.status(200).json({
+        //   totalAmount,
+        //   length: subscriptionLength,
+        //   secondaryIdCounts, // Return the array of secondaryIds
+        // });
     res.json({ success: true, message: "OTP verified successfully!" });
   } else {
     res.status(400).json({ success: false, message: "Invalid OTP" });

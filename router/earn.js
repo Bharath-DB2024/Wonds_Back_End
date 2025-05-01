@@ -26,7 +26,13 @@ router.post('/earn', async (req, res) => {
     // Find today's subscriptions filtered by `unique`
     const todaySubscriptions = await Subscription.find({
       uniqueId: uniqueId,  // Filter based on unique field
-      createdAt: { $gte: today, $lte: endOfDay }
+      createdAt: { $gte: today, $lte: endOfDay },
+      settlement:null
+    });
+    const todaySubscriptions1 = await Subscription.find({
+      uniqueId: uniqueId,  // Filter based on unique field
+      createdAt: { $gte: today, $lte: endOfDay },
+     
     });
 
     // Find all subscriptions filtered by `unique`
@@ -53,7 +59,7 @@ router.post('/earn', async (req, res) => {
 
     res.status(200).json({
       date: today.toISOString().split('T')[0], // Example: "2025-03-26"
-      todaycount: todaySubscriptions.length,
+      todaycount: todaySubscriptions1.length,
       todayearn: `${todayEarnings}`, // Today's earnings without currency symbol
       totalearn: `${totalEarnings}` // Total earnings without currency symbol
     });
