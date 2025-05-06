@@ -109,6 +109,8 @@ router.post('/excel', async (req, res) => {
 
 
 router.post('/excel1', async (req, res) => {
+  console.log(process.env.baseUrl);
+  
   try {
     const { secondaryUniqueId } = req.body;
     console.log('Received secondaryUniqueId:', req.body);

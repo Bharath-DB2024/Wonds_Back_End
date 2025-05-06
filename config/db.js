@@ -2,7 +2,7 @@
 
 const mongoose = require("mongoose");
 require("dotenv").config(); // Load environment variables
-const dbURI = 'mongodb://127.0.0.1:27017/Wonds_shope';
+const dbURI = process.env.MONGO_URI;
 const connectDB = async () => {
   try {
     await mongoose.connect( dbURI, { 
