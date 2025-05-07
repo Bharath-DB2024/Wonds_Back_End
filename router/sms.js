@@ -126,13 +126,50 @@ router.post("/verify-otp", async (req, res) => {
         const calculateTotalAmount = (subscriptions) => {
           return subscriptions.reduce((total, sub) => {
             const planValue = parseFloat(sub.plan.match(/₹(\d+)/)?.[1] || 0);
-            return total + planValue;
+        
+            let adjustedAmount = planValue;
+        
+            // Apply reduction rules
+            if (planValue === 29) {
+              adjustedAmount -= 10;
+            } else if (planValue === 49) {
+              adjustedAmount -= 30;
+            }
+        
+            // Prevent negative values
+            if (adjustedAmount < 0) adjustedAmount = 0;
+        
+            return total + adjustedAmount;
           }, 0);
         };
+        
     
         // Calculate total amount and count
         const totalAmount = calculateTotalAmount(todaySubscriptions);
         const subscriptionLength = todaySubscriptions.length;
+    
+
+        const calculateEarnAmount = (subscriptions) => {
+          return subscriptions.reduce((total, sub) => {
+            const planValue = parseFloat(sub.plan.match(/₹(\d+)/)?.[1] || 0);
+    
+            let adjustedAmount = planValue;
+    
+            // Apply reduction rules
+            if (planValue === 29) {
+              adjustedAmount -= 19;
+            } else if (planValue === 49) {
+              adjustedAmount -= 15;
+            }
+    
+            // Prevent negative values
+            if (adjustedAmount < 0) adjustedAmount = 0;
+    
+            return total + adjustedAmount;
+          }, 0);
+        };
+    
+        const totalEarn = calculateEarnAmount(todaySubscriptions); // This is the adjusted amount for "earn"
     
         // Create a single settlement record
         if (subscriptionLength > 0) {
@@ -140,6 +177,7 @@ router.post("/verify-otp", async (req, res) => {
              mobile: phone,
              amount: totalAmount, // Total amount for all subscriptions
              uniqueId: uniqueId,
+              earn: totalEarn,
              secondaryIdCounts: secondaryIdCounts.map(id => (id === 'unknown' ? null : id)), // Convert 'unknown' to null
              createdAt: new Date(),
              name: name,

@@ -1,5 +1,7 @@
 const express = require('express');
 const Subscription = require('../models/subscription'); // Import schema
+const Settlement = require('../models/settlement'); 
+const settlement = require('../models/settlement');
 
 const router = express.Router();
 
@@ -29,6 +31,12 @@ router.post('/earn', async (req, res) => {
       createdAt: { $gte: today, $lte: endOfDay },
       settlement:null
     });
+    const totalsettlemnet = await Settlement.find({
+      uniqueId: uniqueId,  // Filter based on unique field
+    });
+
+    console.log(totalsettlemnet.length);
+    
     const todaySubscriptions1 = await Subscription.find({
       uniqueId: uniqueId,  // Filter based on unique field
       createdAt: { $gte: today, $lte: endOfDay },
@@ -42,16 +50,54 @@ router.post('/earn', async (req, res) => {
     // Function to calculate total amount from the `plan` field
     const calculateTotalAmount = (subscriptions) => {
       return subscriptions.reduce((sum, sub) => {
-        const match = sub.plan.match(/\d+/); // Extracts the first number from the plan string
-        const amount = match ? parseInt(match[0], 10) : 0; // Convert to integer
+        const match = sub.plan.match(/\d+/); // Extract numeric part from the plan string
+        let amount = match ? parseInt(match[0], 10) : 0;
+    
+        // Apply custom reductions based on the plan amount
+        if (amount === 29) {
+          amount -= 19;
+        } else if (amount === 49) {
+          amount -= 30;
+        }
+    
+        // Ensure amount doesn't go negative
+        if (amount < 0) amount = 0;
+    
         return sum + amount;
       }, 0);
     };
-
+    const calculateTotalAmount1 = (subscriptions) => {
+      return subscriptions.reduce((sum, sub) => {
+        const match = sub.plan.match(/\d+/); // Extract numeric part from the plan string
+        let amount = match ? parseInt(match[0], 10) : 0;
+    
+        // Apply custom reductions based on the plan amount
+        if (amount === 29) {
+          amount -= 10;
+        } else if (amount === 49) {
+          amount -= 30;
+        }
+    
+        // Ensure amount doesn't go negative
+        if (amount < 0) amount = 0;
+    
+        return sum + amount;
+      }, 0);
+    };
+    const calculateTotalAmount2 = (subscriptions) => {
+      return subscriptions.reduce((sum, sub) => {
+        const match = sub.plan.match(/\d+/); // Extract numeric part from the plan string
+        let amount = match ? parseInt(match[0], 10) : 0;
+        return sum + amount;
+      }, 0);
+    };
+    
+    
+    
     // Calculate earnings for today and total earnings
-    const todayEarnings = calculateTotalAmount(todaySubscriptions);
+    const todayEarnings = calculateTotalAmount2(todaySubscriptions);
     const totalEarnings = calculateTotalAmount(allSubscriptions);
-
+  const todaypay=calculateTotalAmount1(todaySubscriptions);
     // console.log(`Subscriptions on ${today.toISOString().split('T')[0]}:`, todaySubscriptions.length);
     // console.log(`Today's Earnings: ₹${todayEarnings}`);
     // console.log(`Total Subscriptions for unique ${uniqueId}: ${allSubscriptions.length}`);
@@ -61,7 +107,10 @@ router.post('/earn', async (req, res) => {
       date: today.toISOString().split('T')[0], // Example: "2025-03-26"
       todaycount: todaySubscriptions1.length,
       todayearn: `${todayEarnings}`, // Today's earnings without currency symbol
-      totalearn: `${totalEarnings}` // Total earnings without currency symbol
+      totalearn: `${totalEarnings}`, // Total earnings without currency symbol
+      todaypay:`${todaypay}`,
+      settlement:totalsettlemnet.length
+
     });
 
   } catch (error) {

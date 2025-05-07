@@ -402,13 +402,14 @@ router.post('/histroyset', async (req, res) => {
     const subscriptions = await Subscription.find({
       secondaryUniqueId: { $in: secondaryIds }
     }).select('mobile name plan category uniqueId settlement createdAt secondaryUniqueId'); // Exclude documents field
-
+ 
     // Prepare the response
     const response = {
       settlement: {
         _id: settlement._id,
         mobile: settlement.mobile,
         amount: settlement.amount,
+        earn:settlement.earn,
         secondaryIdCounts: settlement.secondaryIdCounts,
         uniqueId: settlement.uniqueId,
         name: settlement.name,
