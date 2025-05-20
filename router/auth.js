@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/login");
+const axios=require("axios");
 
 const Subscription = require('../models/subscription'); // Subscription model
 const Settlement = require('../models/settlement'); // Settlement model
@@ -12,7 +13,7 @@ const router = express.Router();
 
 router.post('/register', async (req, res) => {
   try {
-    console.log('Request body:', req.body); // Log incoming data
+    // console.log('Request body:', req.body); // Log incoming data
 
     const {
       shopName,
@@ -147,18 +148,24 @@ router.post('/register', async (req, res) => {
     } else {
       // Create new user (original registration logic)
       let user = await User.findOne({ username });
+        const message=`Welcome to Wonds by Cyboglabs, ${shopName}! We’re thrilled to have you onboard in helping customers enjoy stress-free warranty care. To know more, visit https://wonds.in or call us at 1800 410 1155.&fl=0&dc=0&gwid=2`
       if (user) {
+        sendOtp(mobileNumber,message );
         return res.status(400).json({ message: 'User already exists' });
       }
 
       // Generate uniqueId
       const newUniqueId = generateUniqueId(shopName, mobileNumber);
       console.log('Generated uniqueId:', newUniqueId);
-
+      
       // Check if uniqueId already exists
       user = await User.findOne({ uniqueId: newUniqueId });
       if (user) {
+       
+
+       
         return res.status(400).json({ message: 'Unique ID already exists' });
+     
       }
 
       // Hash password
@@ -186,9 +193,10 @@ router.post('/register', async (req, res) => {
         uniqueId: newUniqueId,
       });
 
-      // Save user
+      sendOtp(mobileNumber,message );
+      //sav e data
       await user.save();
-    
+
       res.json({
         message: 'User registered successfully!',
         uniqueId: user.uniqueId,
@@ -199,6 +207,26 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
+const sendOtp = async (mobileNumber,message) => {
+  try {
+    console.log("rr");
+    
+    const apiKey = process.env.apiKey; // Replace with your actual API key
+    const senderId =  process.env.senderId; // Must be approved sender ID
+ 
+    const url = `http://cloud.smsindiahub.in/vendorsms/pushsms.aspx?APIKey=${apiKey}&msisdn=${mobileNumber}&sid=${senderId}&msg=${message}`;
+
+    const response = await axios.get(url);
+    
+
+    console.log('SMSIndiaHub Response:', response.data);
+  } catch (error) {
+    console.log("rr");
+    
+    console.error('Failed to send OTP:', error.message);
+  }
+};
 // 📌 Login Route
 router.post("/login", async (req, res) => {
   try {

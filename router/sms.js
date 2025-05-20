@@ -179,7 +179,7 @@ router.post("/verify-otp", async (req, res) => {
              uniqueId: uniqueId,
               earn: totalEarn,
              secondaryIdCounts: secondaryIdCounts.map(id => (id === 'unknown' ? null : id)), // Convert 'unknown' to null
-             createdAt: new Date(),
+            //  createdAt: new Date(),
              name: name,
              status: status,
              count: subscriptionLength, // Total count of subscriptions

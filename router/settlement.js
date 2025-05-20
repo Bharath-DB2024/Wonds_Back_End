@@ -4,7 +4,7 @@ const Settlement = require('../models/settlement'); // Import Settlement schema
 const settlement = require('../models/settlement');
 const User = require("../models/login");
 const axios = require("axios");
-
+const Earn = require('../models/earn');
 const router = express.Router();
 
 // router.post('/settlement', async (req, res) => {
@@ -186,10 +186,11 @@ settlement:null,
       status: status,
       count: subscriptionLength, // Total count of subscriptions
     });
-
+  console.log( new Date());
+  
     // Save the settlement record
     await newSettlement.save();
-
+  
   }// Response with total amount, count, and secondaryId counts
     res.status(200).json({
       totalAmount,
@@ -232,7 +233,7 @@ router.post('/settlementhistory', async (req, res) => {
 });
 
 
-router.post('/settlementhistory', async (req, res) => {
+router.post('/Earnthistory', async (req, res) => {
   try {
     const { uniqueId, date, phone } = req.body; // Expecting phone, uniqueId, and date in the request body
     console.log(uniqueId, date, phone);
@@ -240,7 +241,7 @@ router.post('/settlementhistory', async (req, res) => {
     // Validate required fields
 
 
-    const updatedTodaySubscriptions = await Settlement.find({
+    const updatedTodaySubscriptions = await Earn.find({
       uniqueId: uniqueId,
 
 
@@ -421,6 +422,57 @@ router.post('/histroyset', async (req, res) => {
       totalSubscriptions: subscriptions.length // Number of matching subscriptions
     };
 
+    // Send the response
+    res.status(200).json(response);
+  } catch (error) {
+    console.error('Error fetching settlement or subscription data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/histroyearn', async (req, res) => {
+  try {
+    const { uniqueId } = req.body; // Expecting uniqueId in the request body
+ console.log( "the data",uniqueId);
+    // Validate input
+    if (!uniqueId) {
+      return res.status(400).json({ error: 'uniqueId is required' });
+    }
+
+    // Find the settlement record by uniqueId and corresponding _id
+    const settlement = await Earn.findOne({_id: uniqueId });
+
+    if (!settlement) {
+      return res.status(404).json({ error: 'Settlement not found' });
+    }
+
+    // Extract secondaryIdCounts from the settlement
+    const secondaryIds = settlement.secondaryIdCounts;
+
+    // Find all subscriptions where secondaryUniqueId matches any of the secondaryIds, excluding documents
+    const subscriptions = await Subscription.find({
+      secondaryUniqueId: { $in: secondaryIds }
+    }).select('mobile name plan category uniqueId settlement createdAt secondaryUniqueId'); // Exclude documents field
+ 
+    // Prepare the response
+    const response = {
+      settlement: {
+        _id: settlement._id,
+        mobile: settlement.mobile,
+        amount: settlement.amount,
+        earn:settlement.earn,
+        secondaryIdCounts: settlement.secondaryIdCounts,
+        uniqueId: settlement.uniqueId,
+        // name: settlement.name,
+        // status: settlement.status,
+        createdAt: settlement.createdAt,
+        count: settlement.count
+      },
+      subscriptions: subscriptions, // Matching subscription records
+      totalSubscriptions: subscriptions.length // Number of matching subscriptions
+    };
+ console.log(response);
+ 
     // Send the response
     res.status(200).json(response);
   } catch (error) {
